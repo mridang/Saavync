@@ -282,6 +282,9 @@ public class SyncHelper {
      */
 	public static Boolean getCover(String strId, String strAlbum, String strSong,
 			String strPath, Context ctxContext) {
+		
+		if (strPath.isEmpty())
+			strPath = "http://www.saavn.com/_i/default-album-big.png";
 
         File filCache = ctxContext.getCacheDir();
 

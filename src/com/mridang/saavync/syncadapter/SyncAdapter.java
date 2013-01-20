@@ -17,6 +17,7 @@ import android.util.Log;
 
 import com.mridang.saavync.client.SaavnClient;
 import com.mridang.saavync.helpers.MediaAdder;
+import com.mridang.saavync.helpers.SyncHelper;
 
 /*
  * Class contains all the methods to synchronize the the starred tracks on the

@@ -1,4 +1,4 @@
-package com.mridang.saavync.syncadapter;
+package com.mridang.saavync.helpers;
 
 import java.io.File;
 import java.io.FileOutputStream;

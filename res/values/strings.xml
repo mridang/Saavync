@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="label">Saavn</string>
+    <string name="downloading_notification_title">Synchronizing Saavn</string>
+    <string name="downloading_notification_message">Downloading %1$s - %2$s</string>
+    <string name="login_username_hint">Username</string>
+    
+    <string name="login_authenticating_message">Please wait while log you in to Saavn.</string>
+    <string name="login_ok_button">Sign in</string>
+    <string name="login_signin_message">Please enter your Saavn credentials to log in.</string>
+    
+    <string name="login_password_hint">Password</string>
+    <string name="downloaded_notification_title">%1$s - %2$s</string>
+    <string name="downloaded_notification_message">Successfully downloaded.</string>
+    
+</resources>

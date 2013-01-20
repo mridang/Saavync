@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="txt_textfield_dark_normal">#ffcccccc</color>
+    <color name="txt_textfield_dark_active">#ffffffff</color>
+    <color name="bag_login">#ffecebe7</color>
+    <color name="txt_button_dark">#ffffffff</color>
+    <color name="txt_textfield_light_normal">#ff333333</color>
+    <color name="txt_textfield_light_active">#ff000000</color>
+</resources>

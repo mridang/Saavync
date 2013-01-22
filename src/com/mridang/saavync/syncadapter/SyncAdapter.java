@@ -16,6 +16,7 @@ import android.os.Environment;
 import android.util.Log;
 
 import com.mridang.saavync.client.SaavnClient;
+import com.mridang.saavync.exceptions.ConnectivityException;
 import com.mridang.saavync.helpers.MediaAdder;
 import com.mridang.saavync.helpers.SyncHelper;
 
@@ -46,79 +47,95 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
 
-        try {
+    	JSONArray lstTracks = null;
 
-        	JSONArray lstTracks = SaavnClient.getStarred(this.getContext());
-        	Log.d(TAG, lstTracks.toString(2));
+    	try {
 
-        	Log.d(TAG, "Removing deleted files from library.");
-        	SyncHelper.cleanMusic(MUSIC_DIR, lstTracks);
-        	Log.d(TAG, "Cleaned");
+        	lstTracks = SaavnClient.getStarred(this.getContext());
 
+		} catch (ConnectivityException e) {
 
+            return;
 
-        	Log.d(TAG, "Downloading starred tracks.");
-            for (Integer intId = 0; intId < lstTracks.length(); intId++) {
+        } finally {
 
-                String strSong = lstTracks.getJSONObject(intId).getString("song");
-                Log.d(TAG, String.format("Fetching track %s", strSong));
+    		if (lstTracks != null) {
 
-                String strId = lstTracks.getJSONObject(intId).getString("id");
-                if (new File(MUSIC_DIR, String.format("%s.mp3", strId)).exists()) {
+            	Log.d(TAG, "Removing deleted files from library.");
+            	SyncHelper.cleanMusic(MUSIC_DIR, lstTracks);
+            	Log.d(TAG, "Cleaned");
 
-                	Log.d(TAG, "The track already exists. Skipping.");
-                	new File(getContext().getCacheDir(), strId).createNewFile();
-                    continue;
+				Log.d(TAG, "Downloading starred tracks.");
+				for (Integer intId = 0; intId < lstTracks.length(); intId++) {
 
-                } else {
+				    try {
 
-                    String strAlbum = lstTracks.getJSONObject(intId).getString("album");
-                	if (new File(getContext().getCacheDir(), strId).exists()) {
+                        String strSong = lstTracks.getJSONObject(intId).getString("song");
+                        Log.d(TAG, String.format("Fetching track %s", strSong));
 
-                		Log.d(TAG, "The track was deleted locally. Unstarring.");
-                        SaavnClient.unstarTrack(getContext(), strId);
-                        new File(getContext().getCacheDir(), strId).delete();
+                        String strId = lstTracks.getJSONObject(intId).getString("id");
+                        if (new File(MUSIC_DIR, String.format("%s.mp3", strId)).exists()) {
 
-                	} else {
+                        	Log.d(TAG, "The track already exists. Skipping.");
+                        	new File(getContext().getCacheDir(), strId).createNewFile();
+                            continue;
 
-                	    String strTrack = lstTracks.getJSONObject(intId).getString("media_url");
-                		if (!SyncHelper.getTrack(strId, strAlbum, strSong, strTrack, getContext())) {
+                        } else {
 
-                			Log.d(TAG, "Something went wrong downloading the track.");
-                			new File(getContext().getCacheDir(), strId + ".mp3").delete();
-                			continue;
+                            String strAlbum = lstTracks.getJSONObject(intId).getString("album");
+                        	if (new File(getContext().getCacheDir(), strId).exists()) {
 
-                		} else {
+                        		Log.d(TAG, "The track was deleted locally. Unstarring.");
+                                SaavnClient.unstarTrack(getContext(), strId);
+                                new File(getContext().getCacheDir(), strId).delete();
 
-                		    String strCover = lstTracks.getJSONObject(intId).getString("image");
-                			if (SyncHelper.getCover(strId, strAlbum, strSong, strCover, getContext())) {
+                        	} else {
 
-                			    Log.d(TAG, "Writing metadata for the track and adding to library.");
-                			    SyncHelper.writeTags(getContext().getCacheDir(), MUSIC_DIR, lstTracks.getJSONObject(intId));
-                                new MediaAdder(getContext(), new File(MUSIC_DIR, String.format("%s.mp3", strId)), null);
+                        	    String strTrack = lstTracks.getJSONObject(intId).getString("media_url");
+                        		if (!SyncHelper.getTrack(strId, strAlbum, strSong, strTrack, getContext())) {
 
-                			}
+                        			Log.d(TAG, "Something went wrong downloading the track.");
+                        			new File(getContext().getCacheDir(), strId + ".mp3").delete();
+                        			continue;
 
-                		}
+                        		} else {
 
+                        		    String strCover = lstTracks.getJSONObject(intId).getString("image");
+                        			if (SyncHelper.getCover(strId, strAlbum, strSong, strCover, getContext())) {
+
+                        			    Log.d(TAG, "Writing metadata for the track and adding to library.");
+                        			    SyncHelper.writeTags(getContext().getCacheDir(), MUSIC_DIR, lstTracks.getJSONObject(intId));
+                                        new MediaAdder(getContext(), new File(MUSIC_DIR, String.format("%s.mp3", strId)), null);
+
+                        			}
+
+                        		}
+
+                            }
+
+                        }
+
+                    } catch (JSONException e) {
+                        Log.e(TAG, "The response seems to have some fields missing.", e);
+                        throw new RuntimeException("The response seems to have some fields missing.", e);
+                    } catch (ConnectivityException e) {
+                        Log.w(TAG, "There seems to be some temporary connectivity issues.", e);
+                        continue;
+                    } catch (IOException e) {
+                        Log.w(TAG, "Unable to create a new marker file in the cache directory.", e);
+                        continue;
                     }
 
-                }
+				}
+				Log.d(TAG, String.format("Downloaded successfully.", ""));
 
-            }
-            Log.d(TAG, String.format("Downloaded successfully.", ""));
+            	Log.d(TAG, "Removing deleted files from cache.");
+    	    	SyncHelper.cleanCache(getContext().getCacheDir(), lstTracks);
+    	    	Log.d(TAG, "Cleaned");
 
+    		}
 
-
-        	Log.d(TAG, "Removing deleted files from cache.");
-	    	SyncHelper.cleanCache(getContext().getCacheDir(), lstTracks);
-	    	Log.d(TAG, "Cleaned");
-
-        } catch (JSONException e) {
-            Log.e(TAG, "Error extracting field names from response.", e);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    	}
 
     }
 
